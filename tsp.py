@@ -44,5 +44,5 @@ edge_labels = {k: v for k, v in edge_labels.items() if v != 0}
 nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels)
 
 # Show the plot
-plt.title("Wizualizacja grafu")
+plt.title("Wizualizacja grafus")
 plt.show()
