@@ -1,0 +1,21 @@
+<travellingSalesmanProblemInstance>
+  <name>a280</name>
+  <source>TSPLIB</source>
+  <description>drilling problem (Ludwig)</description>
+  <doublePrecision>15</doublePrecision>
+  <ignoredDigits>5</ignoredDigits>
+  <graph>
+    <vertex>
+      <edge cost="2.000000000000000e+01">1</edge>
+      <edge cost="2.408318915758459e+01">2</edge>
+    </vertex>
+    <vertex>
+      <edge cost="2.000000000000000e+01">0</edge>
+      <edge cost="1.843908891458577e+01">2</edge>
+    </vertex>
+    <vertex>
+      <edge cost="2.408318915758459e+01">0</edge>
+      <edge cost="1.843908891458577e+01">1</edge>
+    </vertex>
+  </graph>
+</travellingSalesmanProblemInstance>
