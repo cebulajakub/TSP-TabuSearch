@@ -7,7 +7,7 @@ import cv2
 
 def load(path):
     # Parse the XML
-    tree = ET.parse('l.xml')
+    tree = ET.parse(path)
     root = tree.getroot()
 
 
@@ -30,7 +30,7 @@ def load(path):
     return G    
 
 
-def draw(Graph):
+def draw(graph):
     # Visualization part (drawing the graph using OpenCV)
     width, height = 1800, 1000
     image = np.zeros((height, width, 3), dtype=np.uint8)
@@ -40,7 +40,7 @@ def draw(Graph):
     node_positions = {k: (int(v[0] * width / 2 + width / 2), int(v[1] * height / 2 + height / 2)) for k, v in pos.items()}
 
     # Draw the edges
-    for edge in G.edges():
+    for edge in graph.edges():
         start_node = edge[0]
         end_node = edge[1]
         start_pos = node_positions[start_node]
@@ -53,7 +53,7 @@ def draw(Graph):
         cv2.putText(image, str(node), (x - 10, y + 5), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 0), 2)
 
     # Draw the edge labels (costs)
-    for edge in G.edges(data=True):  # edge contains both start, end, and data
+    for edge in graph.edges(data=True):  # edge contains both start, end, and data
         start_pos = node_positions[edge[0]]
         end_pos = node_positions[edge[1]]
         data = edge[2]  # Extract the data (weight) for the edge
@@ -71,6 +71,6 @@ def draw(Graph):
     cv2.destroyAllWindows()
 
 if __name__=='__main__':
-    path = "D:\AlgorytmyOptumalizacji"
+    path = "D:\AlgorytmyOptumalizacji\l.xml"
     G = load(path)
     draw(G) 
