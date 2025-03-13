@@ -1,0 +1,3 @@
+* 3 opt i po 20 iteracjach jak się nie zmienia to randomowa zmiana krawędzi ale to nie działa - sadeg
+* 2 opt lecymy jak się jest minimum lokalne to dajemy 3opt i wracamy do 2 opt - ale też sie chowało w minimum lokalnym sadeg :((
+* może trzeba spróbować wychodzić z minimum lokalnego innym algorytmem huhu

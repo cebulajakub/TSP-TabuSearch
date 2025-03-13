@@ -42,6 +42,16 @@ wybieramy randomowa permutacje  i szukamy najblizszych sasiadów (roziwązań) t
 # def generate_tabu_matrix(G):
 
 
+def generate_2opt_neighborhood(tour):
+    neighborhood = []
+    n = len(tour)
+    for i in range(n - 1):
+        for j in range(i + 2, n):  # Upewniamy się, że nie zamieniamy sąsiednich wierzchołków
+            new_tour = tour[:i] + tour[i:j][::-1] + tour[j:]
+            neighborhood.append(new_tour)
+    return neighborhood
+
+
 def generate_3opt_neighborhood(tour):
     neighborhood = []
     n = len(tour)
@@ -72,7 +82,12 @@ def tabu_search(G, max_iterations=1000, tabu_tenure=10):
     print(f"Initial solution: {current_solution}, Initial cost: {best_cost}\n")
 
     while iteration < max_iterations and no_improve_count < max_no_improve:
-        neighborhood = generate_3opt_neighborhood(current_solution)
+        if no_improve_count > 2:
+            neighborhood = generate_3opt_neighborhood(current_solution)
+        else:
+            neighborhood = generate_2opt_neighborhood(current_solution)
+
+
         best_move = None
         best_move_cost = float('inf')
         best_move_edges = None
@@ -132,7 +147,7 @@ def load(path):
 
 if __name__ == "__main__":
     # Load graph
-    path = "D:\AlgorytmyOptumalizacji\\4.xml"
+    path = "D:\AlgorytmyOptumalizacji\\berlin52.xml"
     G = load(path)
     try:
         best_solution, best_cost = tabu_search(G, max_iterations=40000, tabu_tenure=10)
