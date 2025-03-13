@@ -159,12 +159,12 @@ def draw(Graph, current_solution, image):
 
 if __name__ == "__main__":
     # Load graph
-    path = "E:/TSP_TABU/pythonProject1/TSP-TabuSearch/l.xml"
+    path = "D:\AlgorytmyOptumalizacji\\4.xml"
     G = load(path)
 
     # Run Tabu Search for TSP
     try:
-        best_solution, best_cost = tabu_search(G, max_iterations=40000, tabu_tenure=10)
+        best_solution, best_cost = tabu_search(G, max_iterations=1, tabu_tenure=10)
         print("Best Solution (Tour):", best_solution)
         print("Best Cost:", best_cost)
     except ValueError as e:
