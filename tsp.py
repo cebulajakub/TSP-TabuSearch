@@ -131,10 +131,10 @@ def load(path):
 
 
 if __name__ == "__main__":
-    path = "E:/TSP_TABU/pythonProject1/TSP-TabuSearch/br17.xml"
+    path = "E:/TSP_TABU/pythonProject1/TSP-TabuSearch/bayg29.xml"
     G = load(path)
     try:
-        best_solution, best_cost = tabu_search(G, max_iterations=1, tabu_tenure=10)
+        best_solution, best_cost = tabu_search(G, max_iterations=100, tabu_tenure=10)
         print("Best Solution (Tour):", best_solution)
         print("Best Cost:", best_cost)
     except ValueError as e:
