@@ -1,4 +1,5 @@
 import random
+import time
 import numpy as np
 import networkx as nx
 import cv2
@@ -83,17 +84,16 @@ def diversify_solution(tour, diversification_factor):
         tour[i], tour[j] = tour[j], tour[i]
     return tour
 
-def dynamic_tabu_tenure(iteration, max_iterations, base_tenure=15):
+def dynamic_tabu_tenure(iteration, max_iterations, base_tenure=10):
     """Dynamiczne dostosowanie długości listy tabu."""
     return base_tenure + int((iteration / max_iterations) * base_tenure * base_tenure)
 
-def dynamic_max_no_improve(iteration, max_iterations, base_no_improve=10):
+def dynamic_max_no_improve(iteration, max_iterations, base_no_improve=15):
     """Dynamiczne dostosowanie limitu iteracji bez poprawy."""
     print("base :",base_no_improve,"iteration :",iteration,"max_iteration", max_iterations)
     dynamic_no_imp = base_no_improve + int((iteration / max_iterations) * base_no_improve * base_no_improve)
     print("dynamic :",dynamic_no_imp, "+", (iteration / max_iterations) * base_no_improve * base_no_improve)
     return dynamic_no_imp
-
 
 def greedy_solution(G):
     start_node = random.choice(list(G.nodes))
@@ -108,8 +108,35 @@ def greedy_solution(G):
         unvisited.remove(next_node)
     
     return tour
+'''def get_nearest_neighbor(last_node, unvisited, G):
+   min_weight = float('inf')
+    nearest_node = None
+    
+    for node in unvisited:
+        weight = G[last_node][node]['weight']
+        if weight < min_weight:
+            min_weight = weight
+            nearest_node = node
+    
+    return nearest_node
 
-def tabu_search(G, max_iterations=1000, base_tabu_tenure=10, diversification_factor=0.1):
+def greedy_solution(G):
+    start_node = random.choice(list(G.nodes))
+    unvisited = set(G.nodes)
+    unvisited.remove(start_node)
+    tour = [start_node]
+
+    while unvisited:
+        last_node = tour[-1]
+        next_node = get_nearest_neighbor(last_node, unvisited, G)
+        tour.append(next_node)
+        unvisited.remove(next_node)
+
+    return tour
+
+'''
+
+def tabu_search(G, max_iterations=1000, base_tabu_tenure=10, diversification_factor=0.15):
     """Algorytm Tabu Search z adaptacyjną dywersyfikacją i dynamicznymi parametrami."""
     nodes = list(G.nodes)
     print("nodes", nodes)
@@ -121,9 +148,11 @@ def tabu_search(G, max_iterations=1000, base_tabu_tenure=10, diversification_fac
     best_solution = current_solution
     best_cost = calculate_cost(G, best_solution)
     global_best_cost=best_cost
+    global_best_solution=best_solution
     tabu_list = []
     iteration = 0
     no_improve_count = 0
+    max_no_improve = 25
     #last_diversification_iteration = -float('inf')  # Ostatnia iteracja z dywersyfikacją
 
     print("Tabu Search started...\n")
@@ -131,8 +160,9 @@ def tabu_search(G, max_iterations=1000, base_tabu_tenure=10, diversification_fac
 
     while iteration < max_iterations:
         # Dynamiczne dostosowanie parametrow
-        tabu_tenure = dynamic_tabu_tenure(iteration, max_iterations, base_tabu_tenure)
-        max_no_improve = dynamic_max_no_improve(iteration, max_iterations)
+        tabu_tenure = max(15, min(dynamic_tabu_tenure(iteration, max_iterations), 50))
+        
+        #max_no_improve = dynamic_max_no_improve(iteration, max_iterations)
 
         # Generowanie sasiedztwa
         if iteration % 10 == 0 or iteration % 11 == 0:
@@ -154,6 +184,7 @@ def tabu_search(G, max_iterations=1000, base_tabu_tenure=10, diversification_fac
                     best_move_cost = move_cost
                     best_move = move
                     best_move_edges = move_edges
+            
 
         # Jeśli znaleziono ruch
         if best_move is not None:
@@ -168,10 +199,16 @@ def tabu_search(G, max_iterations=1000, base_tabu_tenure=10, diversification_fac
             else:
                 no_improve_count += 1
 
+            #print(f"tabulistbefore = {tabu_list}")
+            #if tabu_tenure >= 50:
+                #tabu_tenure = max(15, tabu_tenure - 10)
+                #print(f"tabulistafter = {tabu_list}")
             # Dodanie ruchu do listy tabu
             tabu_list.append(best_move_edges)
             if len(tabu_list) > tabu_tenure:
                 tabu_list.pop(0)  # Ograniczenie dlugości listy tabu
+            
+            #print(f"tabulistafter22 = {tabu_list}")
 
             print(f"Iteration {iteration + 1}: Best Cost = {global_best_cost}, Current = {current_cost}, Tabu Tenure = {tabu_tenure}, Max No Improve = {max_no_improve}")
 
@@ -184,18 +221,19 @@ def tabu_search(G, max_iterations=1000, base_tabu_tenure=10, diversification_fac
 
             if current_cost < global_best_cost:
                 global_best_cost = current_cost
+                global_best_solution = current_solution
                 
         iteration += 1
 
     print("Tabu Search completed.")
-    return best_solution, best_cost
+    return global_best_solution, global_best_cost
 
 # Rysowanie grafu z aktualnym rozwiązaniem
 def draw(Graph, current_solution, image):
-    pos = nx.spring_layout(Graph, seed=42)
-    width, height = 1600, 800
-    node_positions = {k: (int(v[0] * width / 2 + width / 2), int(v[1] * height / 2 + height / 2)) for k, v in
-                      pos.items()}
+    # Używamy spring_layout do rozplanowania wierzchołków
+    pos = nx.spring_layout(Graph, seed=42, scale=0.8)
+    width, height = 1600, 800  # Ustalamy wymiary obrazu
+    node_positions = {k: (int(v[0] * width / 2 + width / 2), int(v[1] * height / 2 + height / 2)) for k, v in pos.items()}
 
     # Rysowanie krawędzi
     image.fill(0)  # Czyszczenie obrazu na każdą iterację
@@ -208,14 +246,14 @@ def draw(Graph, current_solution, image):
 
     # Rysowanie wierzchołków
     for node, (x, y) in node_positions.items():
-        cv2.circle(image, (x, y), 20, (135, 206, 235), -1)
+        cv2.circle(image, (x, y), 20, (135, 206, 235), -1)  # Kolor wierzchołków
         cv2.putText(image, str(node), (x - 10, y + 5), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 0), 2)
 
     # Rysowanie trasy
     for i in range(len(current_solution) - 1):
-       start_pos = node_positions[current_solution[i]]
-       end_pos = node_positions[current_solution[i + 1]]
-       cv2.line(image, start_pos, end_pos, (255, 0, 0), 4)
+        start_pos = node_positions[current_solution[i]]
+        end_pos = node_positions[current_solution[i + 1]]
+        cv2.line(image, start_pos, end_pos, (255, 0, 0), 4)  # Kolor trasy (czerwony)
 
     # Dodać linię powrotną do pierwszego wierzchołka
     start_pos = node_positions[current_solution[-1]]
@@ -223,10 +261,9 @@ def draw(Graph, current_solution, image):
     cv2.line(image, start_pos, end_pos, (255, 0, 0), 4)
 
     # Wyświetlanie grafu w oknie
-
-
     cv2.imshow('Graph Visualization', image)
-    cv2.waitKey(1)  # Zamiast 200 ms, teraz tylko 1 ms, aby odświeżyć okno
+    cv2.waitKey(0)  # Zamiast 200 ms, teraz tylko 1 ms, aby odświeżyć okno
+    # Nie używamy cv2.destroyAllWindows() - żeby nie zamykać okna po każdej iteracji
     # Bez cv2.destroyAllWindows() - żeby nie zamykać okna po każdej iteracji
 
 
@@ -249,11 +286,17 @@ def load(path):
 
 
 if __name__ == "__main__":
-    path = "D:\AlgorytmyOptumalizacji\\berlin52.xml"
+    path = "D:\AlgorytmyOptumalizacji\\bayg29.xml"
     G = load(path)
+    image = np.zeros((800, 1600, 3), dtype=np.uint8)
     try:
-        best_solution, best_cost = tabu_search(G, max_iterations=10000, diversification_factor=0.1)
+        start_time = time.time()
+        best_solution, best_cost = tabu_search(G, max_iterations=1000, diversification_factor=0.1)
+        end_time = time.time()
+        execution_time = end_time - start_time
+        print(f"Time taken for Tabu Search: {execution_time:.2f} seconds")
         print("Best Solution (Tour):", best_solution)
         print("Best Cost:", best_cost)
+        draw(G, best_solution, image)
     except ValueError as e:
         print(e)
