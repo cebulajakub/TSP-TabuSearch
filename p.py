@@ -1,8 +1,3 @@
-* 3 opt i po 20 iteracjach jak się nie zmienia to randomowa zmiana krawędzi ale to nie działa - sadeg
-* 2 opt lecymy jak się jest minimum lokalne to dajemy 3opt i wracamy do 2 opt - ale też sie chowało w minimum lokalnym sadeg :((
-* może trzeba spróbować wychodzić z minimum lokalnego innym algorytmem huhu
-
-
 import random
 import numpy as np
 import networkx as nx
@@ -70,59 +65,47 @@ def generate_3opt_neighborhood(tour):
     return neighborhood
 
 
-def diversify_solution(tour, diversification_factor=0.15):
-    """Dywersyfikacja: losowo zmienia część trasy."""
-    n = len(tour)
-    num_swaps = int(diversification_factor * n)
-    print("Number of vertex swap :",num_swaps)
-    for _ in range(num_swaps):
-        i, j = random.sample(range(n), 2)
-        tour[i], tour[j] = tour[j], tour[i]
-    return tour
-
-def tabu_search(G, max_iterations=1000, tabu_tenure=10, diversification_factor=0.15, max_no_improve=100):
+def tabu_search(G, max_iterations=1000, tabu_tenure=10):
     nodes = list(G.nodes)
     if not nodes:
         raise ValueError("The graph is empty, no nodes to form a solution.")
-    
+
     current_solution = random.sample(nodes, len(nodes))
     best_solution = current_solution
     best_cost = calculate_cost(G, best_solution)
-    global_best_cost = best_cost
     tabu_list = []  # Lista krawędzi zamiast pełnych tras
     iteration = 0
+    max_no_improve = 100  # Limit iteracji bez poprawy
     no_improve_count = 0
-    list=[]
-    
+
     print("Tabu Search started...\n")
     print(f"Initial solution: {current_solution}, Initial cost: {best_cost}\n")
-    
+
     while iteration < max_iterations and no_improve_count < max_no_improve:
-        # Tworzymy sąsiedztwo w zależności od liczby iteracji bez poprawy
-        #if iteration % 10 == 0 or iteration % 11 == 0:
-        #    neighborhood = generate_3opt_neighborhood(current_solution)
-        #else:
-        neighborhood = generate_2opt_neighborhood(current_solution)
-        
+        if no_improve_count > 2:
+            neighborhood = generate_3opt_neighborhood(current_solution)
+        else:
+            neighborhood = generate_2opt_neighborhood(current_solution)
+
+
         best_move = None
         best_move_cost = float('inf')
         best_move_edges = None
-        
-        # Szukamy najlepszego ruchu
+
         for move in neighborhood:
             move_edges = set(zip(move, move[1:] + [move[0]]))  # Zapisujemy tylko krawędzie
             move_cost = calculate_cost(G, move)
-            
+
             if move_edges not in tabu_list or move_cost < best_cost:  # Aspiracja
                 if move_cost < best_move_cost:
                     best_move_cost = move_cost
                     best_move = move
                     best_move_edges = move_edges
-        
+
         if best_move is not None:
             current_solution = best_move
             current_cost = best_move_cost
-            
+
             if current_cost < best_cost:
                 best_solution = current_solution
                 best_cost = current_cost
@@ -133,24 +116,18 @@ def tabu_search(G, max_iterations=1000, tabu_tenure=10, diversification_factor=0
             tabu_list.append(best_move_edges)
             if len(tabu_list) > tabu_tenure:
                 tabu_list.pop(0)  # Ograniczenie długości listy tabu
-                
-            if no_improve_count > 25:  
-                print(f"Iteration {iteration + 1}: No improvement for 5 steps, applying diversification.")
-                current_solution = diversify_solution(current_solution, diversification_factor)
-                current_cost = calculate_cost(G, current_solution)
-                no_improve_count = 0
-                best_cost=current_cost
-                
-            if current_cost < global_best_cost:
-                global_best_cost = current_cost
-                
-            print(f"Iteration {iteration + 1}: Best Cost = {global_best_cost}")
-            print(f"current_cost: {current_cost}")
+
+            print(f"Iteration {iteration + 1}: Best Cost = {best_cost}")
+        else:
+            print(f"Iteration {iteration + 1}: No move found. Trying random restart.")
+            current_solution = random.sample(nodes, len(nodes))  # Losowy restart w razie zastoju
+            no_improve_count += 1
 
         iteration += 1
 
     print("Tabu Search completed.")
     return best_solution, best_cost
+
 
 def load(path):
     tree = ET.parse(path)
@@ -171,7 +148,7 @@ def load(path):
 
 if __name__ == "__main__":
     # Load graph
-    path = "D:\AlgorytmyOptumalizacji\\a280.xml"
+    path = "D:\AlgorytmyOptumalizacji\\att48.xml"
     G = load(path)
     try:
         best_solution, best_cost = tabu_search(G, max_iterations=40000, tabu_tenure=10)

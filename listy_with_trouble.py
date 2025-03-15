@@ -1,8 +1,3 @@
-* 3 opt i po 20 iteracjach jak się nie zmienia to randomowa zmiana krawędzi ale to nie działa - sadeg
-* 2 opt lecymy jak się jest minimum lokalne to dajemy 3opt i wracamy do 2 opt - ale też sie chowało w minimum lokalnym sadeg :((
-* może trzeba spróbować wychodzić z minimum lokalnego innym algorytmem huhu
-
-
 import random
 import numpy as np
 import networkx as nx
@@ -92,17 +87,17 @@ def tabu_search(G, max_iterations=1000, tabu_tenure=10, diversification_factor=0
     tabu_list = []  # Lista krawędzi zamiast pełnych tras
     iteration = 0
     no_improve_count = 0
-    list=[]
+    list_moves=[]
     
     print("Tabu Search started...\n")
     print(f"Initial solution: {current_solution}, Initial cost: {best_cost}\n")
     
     while iteration < max_iterations and no_improve_count < max_no_improve:
         # Tworzymy sąsiedztwo w zależności od liczby iteracji bez poprawy
-        #if iteration % 10 == 0 or iteration % 11 == 0:
-        #    neighborhood = generate_3opt_neighborhood(current_solution)
-        #else:
-        neighborhood = generate_2opt_neighborhood(current_solution)
+        if iteration % 10 == 0 or iteration % 11 == 0:
+            neighborhood = generate_3opt_neighborhood(current_solution)
+        else:
+            neighborhood = generate_2opt_neighborhood(current_solution)
         
         best_move = None
         best_move_cost = float('inf')
@@ -113,12 +108,16 @@ def tabu_search(G, max_iterations=1000, tabu_tenure=10, diversification_factor=0
             move_edges = set(zip(move, move[1:] + [move[0]]))  # Zapisujemy tylko krawędzie
             move_cost = calculate_cost(G, move)
             
-            if move_edges not in tabu_list or move_cost < best_cost:  # Aspiracja
-                if move_cost < best_move_cost:
-                    best_move_cost = move_cost
-                    best_move = move
-                    best_move_edges = move_edges
-        
+            if move_edges not in tabu_list:
+                list_moves.append((move_cost,move,move_edges))
+            elif move_cost < best_cost:
+                tabu_list.append((move_cost,move,move_edges))
+            if list_moves:
+                best_move_cost, best_move, best_move_edges = min(list_moves, key=lambda x: x[0]) 
+            elif tabu_list:
+                best_move_cost, best_move, best_move_edges = min(tabu_list, key=lambda x: x[0]) 
+                
+        list_moves.clear()        
         if best_move is not None:
             current_solution = best_move
             current_cost = best_move_cost
@@ -130,7 +129,8 @@ def tabu_search(G, max_iterations=1000, tabu_tenure=10, diversification_factor=0
             else:
                 no_improve_count += 1
 
-            tabu_list.append(best_move_edges)
+            tabu_list.append((best_move_cost, best_move, best_move_edges))
+
             if len(tabu_list) > tabu_tenure:
                 tabu_list.pop(0)  # Ograniczenie długości listy tabu
                 
@@ -171,7 +171,7 @@ def load(path):
 
 if __name__ == "__main__":
     # Load graph
-    path = "D:\AlgorytmyOptumalizacji\\a280.xml"
+    path = "D:\AlgorytmyOptumalizacji\\bayg29.xml"
     G = load(path)
     try:
         best_solution, best_cost = tabu_search(G, max_iterations=40000, tabu_tenure=10)
