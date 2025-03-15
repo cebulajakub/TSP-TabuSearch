@@ -56,6 +56,15 @@ def generate_3opt_neighborhood(tour):
                 neighborhood.extend([new_tour_1, new_tour_2, new_tour_3])
     return neighborhood
 
+def generate_2opt_neighborhood(tour):
+    neighborhood = []
+    n = len(tour)
+    for i in range(n - 1):
+        for j in range(i + 2, n):  # Upewniamy się, że nie zamieniamy sąsiednich wierzchołków
+            new_tour = tour[:i] + tour[i:j][::-1] + tour[j:]
+            neighborhood.append(new_tour)
+    return neighborhood
+
 def random_edge_swap(tour):
     """Randomly swap two edges in the tour"""
     n = len(tour)
@@ -111,6 +120,7 @@ def tabu_search(G, max_iterations=1000, base_tabu_tenure=10, diversification_fac
     current_solution = greedy_solution(G)
     best_solution = current_solution
     best_cost = calculate_cost(G, best_solution)
+    global_best_cost=best_cost
     tabu_list = []
     iteration = 0
     no_improve_count = 0
@@ -125,7 +135,10 @@ def tabu_search(G, max_iterations=1000, base_tabu_tenure=10, diversification_fac
         max_no_improve = dynamic_max_no_improve(iteration, max_iterations)
 
         # Generowanie sasiedztwa
-        neighborhood = generate_3opt_neighborhood(current_solution)
+        if iteration % 10 == 0 or iteration % 11 == 0:
+            neighborhood = generate_3opt_neighborhood(current_solution)
+        else:
+            neighborhood = generate_2opt_neighborhood(current_solution)
         best_move = None
         best_move_cost = float('inf')
         best_move_edges = None
@@ -160,24 +173,8 @@ def tabu_search(G, max_iterations=1000, base_tabu_tenure=10, diversification_fac
             if len(tabu_list) > tabu_tenure:
                 tabu_list.pop(0)  # Ograniczenie dlugości listy tabu
 
-            print(f"Iteration {iteration + 1}: Best Cost = {best_cost}, Current = {current_cost}, Tabu Tenure = {tabu_tenure}, Max No Improve = {max_no_improve}")
+            print(f"Iteration {iteration + 1}: Best Cost = {global_best_cost}, Current = {current_cost}, Tabu Tenure = {tabu_tenure}, Max No Improve = {max_no_improve}")
 
-        else:
-            # Jeśli nie znaleziono ruchu, zastosuj dywersyfikację
-            print(f"Iteration {iteration + 1}: No move found. Applying diversification.")
-            current_solution = diversify_solution(current_solution, diversification_factor)
-            current_cost = calculate_cost(G, current_solution)  # Oblicz koszt po dywersyfikacji
-            no_improve_count += 1
-
-
-            print(f"Iteration {iteration + 1}: Diversification applied. Current Cost = {current_cost}")
-
-            # Zwiększ max_no_improve
-            max_no_improve = dynamic_max_no_improve(iteration, max_iterations)  # Aktualizuj dynamicznie
-            print(f"Updated max_no_improve to {max_no_improve}")
-
-
-            last_diversification_iteration = iteration
 
 
         if no_improve_count >= max_no_improve:
@@ -203,6 +200,9 @@ def tabu_search(G, max_iterations=1000, base_tabu_tenure=10, diversification_fac
                 # Zapisz iteracje dywersyfikacji
                 last_diversification_iteration = iteration
 
+        if current_cost < global_best_cost:
+            global_best_cost = current_cost
+                
         iteration += 1
 
     print("Tabu Search completed.")
