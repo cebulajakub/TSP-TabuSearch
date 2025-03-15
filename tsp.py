@@ -85,6 +85,21 @@ def dynamic_max_no_improve(iteration, max_iterations, base_no_improve=10):
     print("dynamic :",dynamic_no_imp, "+", (iteration / max_iterations) * base_no_improve * base_no_improve)
     return dynamic_no_imp
 
+
+def greedy_solution(G):
+    start_node = random.choice(list(G.nodes))
+    unvisited = set(G.nodes)
+    unvisited.remove(start_node)
+    tour = [start_node]
+    
+    while unvisited:
+        last_node = tour[-1]
+        next_node = min(unvisited, key=lambda node: G[last_node][node]['weight'])
+        tour.append(next_node)
+        unvisited.remove(next_node)
+    
+    return tour
+
 def tabu_search(G, max_iterations=1000, base_tabu_tenure=10, diversification_factor=0.1):
     """Algorytm Tabu Search z adaptacyjną dywersyfikacją i dynamicznymi parametrami."""
     nodes = list(G.nodes)
@@ -93,7 +108,7 @@ def tabu_search(G, max_iterations=1000, base_tabu_tenure=10, diversification_fac
         raise ValueError("The graph is empty, no nodes to form a solution.")
 
     # Inicjalizacja
-    current_solution = random.sample(nodes, len(nodes))
+    current_solution = greedy_solution(G)
     best_solution = current_solution
     best_cost = calculate_cost(G, best_solution)
     tabu_list = []
@@ -252,7 +267,7 @@ def load(path):
 
 
 if __name__ == "__main__":
-    path = "E:/TSP_TABU/pythonProject1/TSP-TabuSearch/att48.xml"
+    path = "D:\AlgorytmyOptumalizacji\\berlin52.xml"
     G = load(path)
     try:
         best_solution, best_cost = tabu_search(G, max_iterations=1, diversification_factor=0.1)
