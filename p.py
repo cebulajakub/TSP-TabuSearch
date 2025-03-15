@@ -82,11 +82,10 @@ def tabu_search(G, max_iterations=1000, tabu_tenure=10):
     print(f"Initial solution: {current_solution}, Initial cost: {best_cost}\n")
 
     while iteration < max_iterations and no_improve_count < max_no_improve:
-        if no_improve_count > 2:
+        if iteration % 10 == 0 or iteration % 11 == 0:
             neighborhood = generate_3opt_neighborhood(current_solution)
         else:
             neighborhood = generate_2opt_neighborhood(current_solution)
-
 
         best_move = None
         best_move_cost = float('inf')

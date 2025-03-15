@@ -124,15 +124,16 @@ def tabu_search(G, max_iterations=1000, base_tabu_tenure=10, diversification_fac
     tabu_list = []
     iteration = 0
     no_improve_count = 0
+    max_no_improve=30
     last_diversification_iteration = -float('inf')  # Ostatnia iteracja z dywersyfikacją
 
     print("Tabu Search started...\n")
     print(f"Initial solution: {current_solution}, Initial cost: {best_cost}\n")
 
-    while iteration < max_iterations:
+    while iteration < max_iterations and no_improve_count < max_no_improve:
         # Dynamiczne dostosowanie parametrow
         tabu_tenure = dynamic_tabu_tenure(iteration, max_iterations, base_tabu_tenure)
-        max_no_improve = dynamic_max_no_improve(iteration, max_iterations)
+        #max_no_improve = dynamic_max_no_improve(iteration, max_iterations)
 
         # Generowanie sasiedztwa
         if iteration % 10 == 0 or iteration % 11 == 0:
@@ -175,30 +176,12 @@ def tabu_search(G, max_iterations=1000, base_tabu_tenure=10, diversification_fac
 
             print(f"Iteration {iteration + 1}: Best Cost = {global_best_cost}, Current = {current_cost}, Tabu Tenure = {tabu_tenure}, Max No Improve = {max_no_improve}")
 
-
-
-        if no_improve_count >= max_no_improve:
-            # czy dywersyfikacja była stosowana w ostatnich iteracjach
-            if iteration - last_diversification_iteration < max_no_improve:
-                # Jeśli tak zwiększ max_no_improve
-                max_no_improve += 10
-                print(f"Further increased max_no_improve to {max_no_improve}")
-            else:
-                #dywersyfikacja
-                print(f"Iteration {iteration + 1}: No improvement for {max_no_improve} iterations. Applying diversification.")
+        if no_improve_count > 25:  
+                print(f"Iteration {iteration + 1}: No improvement for 5 steps, applying diversification.")
                 current_solution = diversify_solution(current_solution, diversification_factor)
-                current_cost = calculate_cost(G, current_solution)  # Oblicz koszt po dywersyfikacji
-                no_improve_count = 0  # Reset licznika
-
-
-                print(f"Iteration {iteration + 1}: Diversification applied. Current Cost = {current_cost}")
-
-                # Zwieksz max_no_improve po dywersyfikacji
-                max_no_improve = dynamic_max_no_improve(iteration, max_iterations)  # Aktualizuj dynamicznie
-                print(f"Updated max_no_improve to {max_no_improve}")
-
-                # Zapisz iteracje dywersyfikacji
-                last_diversification_iteration = iteration
+                current_cost = calculate_cost(G, current_solution)
+                no_improve_count = 0
+                best_cost=current_cost
 
         if current_cost < global_best_cost:
             global_best_cost = current_cost
