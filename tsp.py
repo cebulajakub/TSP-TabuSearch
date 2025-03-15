@@ -83,7 +83,7 @@ def diversify_solution(tour, diversification_factor):
         tour[i], tour[j] = tour[j], tour[i]
     return tour
 
-def dynamic_tabu_tenure(iteration, max_iterations, base_tenure=10):
+def dynamic_tabu_tenure(iteration, max_iterations, base_tenure=15):
     """Dynamiczne dostosowanie długości listy tabu."""
     return base_tenure + int((iteration / max_iterations) * base_tenure * base_tenure)
 
@@ -124,16 +124,15 @@ def tabu_search(G, max_iterations=1000, base_tabu_tenure=10, diversification_fac
     tabu_list = []
     iteration = 0
     no_improve_count = 0
-    max_no_improve=30
-    last_diversification_iteration = -float('inf')  # Ostatnia iteracja z dywersyfikacją
+    #last_diversification_iteration = -float('inf')  # Ostatnia iteracja z dywersyfikacją
 
     print("Tabu Search started...\n")
     print(f"Initial solution: {current_solution}, Initial cost: {best_cost}\n")
 
-    while iteration < max_iterations and no_improve_count < max_no_improve:
+    while iteration < max_iterations:
         # Dynamiczne dostosowanie parametrow
         tabu_tenure = dynamic_tabu_tenure(iteration, max_iterations, base_tabu_tenure)
-        #max_no_improve = dynamic_max_no_improve(iteration, max_iterations)
+        max_no_improve = dynamic_max_no_improve(iteration, max_iterations)
 
         # Generowanie sasiedztwa
         if iteration % 10 == 0 or iteration % 11 == 0:
@@ -176,15 +175,15 @@ def tabu_search(G, max_iterations=1000, base_tabu_tenure=10, diversification_fac
 
             print(f"Iteration {iteration + 1}: Best Cost = {global_best_cost}, Current = {current_cost}, Tabu Tenure = {tabu_tenure}, Max No Improve = {max_no_improve}")
 
-        if no_improve_count > 25:  
-                print(f"Iteration {iteration + 1}: No improvement for 5 steps, applying diversification.")
-                current_solution = diversify_solution(current_solution, diversification_factor)
-                current_cost = calculate_cost(G, current_solution)
-                no_improve_count = 0
-                best_cost=current_cost
+            if no_improve_count > max_no_improve:  
+                    print(f"Iteration {iteration + 1}: No improvement for 5 steps, applying diversification.")
+                    current_solution = diversify_solution(current_solution, diversification_factor)
+                    current_cost = calculate_cost(G, current_solution)
+                    no_improve_count = 0
+                    best_cost=current_cost
 
-        if current_cost < global_best_cost:
-            global_best_cost = current_cost
+            if current_cost < global_best_cost:
+                global_best_cost = current_cost
                 
         iteration += 1
 
@@ -253,7 +252,7 @@ if __name__ == "__main__":
     path = "D:\AlgorytmyOptumalizacji\\berlin52.xml"
     G = load(path)
     try:
-        best_solution, best_cost = tabu_search(G, max_iterations=1, diversification_factor=0.1)
+        best_solution, best_cost = tabu_search(G, max_iterations=10000, diversification_factor=0.1)
         print("Best Solution (Tour):", best_solution)
         print("Best Cost:", best_cost)
     except ValueError as e:
