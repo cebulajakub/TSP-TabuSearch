@@ -3,6 +3,7 @@ import time
 import numpy as np
 import networkx as nx
 import cv2
+import keyboard
 import xml.etree.ElementTree as ET
 
 
@@ -224,7 +225,8 @@ def tabu_search(G, max_iterations=1000, base_tabu_tenure=10, diversification_fac
                 global_best_solution = current_solution
                 
         iteration += 1
-
+        if keyboard.is_pressed('q'):
+            break
     print("Tabu Search completed.")
     return global_best_solution, global_best_cost
 
@@ -286,7 +288,7 @@ def load(path):
 
 
 if __name__ == "__main__":
-    path = "D:\AlgorytmyOptumalizacji\\bayg29.xml"
+    path = "D:\AlgorytmyOptumalizacji\\swiss42.xml"
     G = load(path)
     image = np.zeros((800, 1600, 3), dtype=np.uint8)
     try:
