@@ -1,3 +1,4 @@
+import os
 import random
 import time
 import numpy as np
@@ -6,21 +7,25 @@ import cv2
 import keyboard
 import xml.etree.ElementTree as ET
 
+import openpyxl
+import pandas as pd
+from openpyxl import load_workbook
+
 
 def calculate_cost(G, tour):
-
     total_cost = 0
-    #print(f'Number of nodes { len(tour)} ')
-    for i in range(0,len(tour)-1):
-        total_cost += G[tour[i]][tour[i+1]]['weight']
+    # print(f'Number of nodes { len(tour)} ')
+    for i in range(0, len(tour) - 1):
+        total_cost += G[tour[i]][tour[i + 1]]['weight']
 
     # last to first
     total_cost += G[tour[-1]][tour[0]]['weight']
 
-
-    #print(f'Total cost is {total_cost}')
+    # print(f'Total cost is {total_cost}')
 
     return total_cost
+
+
 '''
 musimy miec permutacje:
 normlanie bedzie ich  n!
@@ -28,21 +33,23 @@ ale nie musimy przegladac wszystkich
 tylko (n-1)!/2 zeby nie powtarzac
 wybieramy randomowa permutacje  i szukamy najblizszych sasiadów (roziwązań) tzw. downhill
  najprosztsza metod 2-opt (zamiana 2 krawedzi liczymyu zamiane z całego zbioru a nie tylko z 2 losowych wierzchołkó) :
- 
+
  Aby zaminiec trzeba zrobic liste najlepszych ruchów czyli policzyc wszystkie mozliwe trasy
  my mamy graf pelny wiec duzo liczenia to zajmie(chyba) i uwzgledniac tabu liste ( nwm jak ja narazie reprezentowac)
- 
- 
+
+
  3-opt złożoność n(n−1)(n−2)/6 ----- O(n^3)
- 
+
  następnie wykonac zamiane policzyc koszt z uwzglednieniem tabu listy
- 
+
  Wyznaczamy zbiory liczb któr mozna przestrawiac i dla kazdej pary wyznaczamy permutacje
- 
+
  Algorytm unika oscylacji wokół optimum lokalnego dzięki przechowywaniu informacji o sprawdzonych już rozwiązaniach w postaci listy tabu (TL).
- 
- 
+
+
 '''
+
+
 # def generate_tabu_matrix(G):
 
 
@@ -58,6 +65,7 @@ def generate_3opt_neighborhood(tour):
                 neighborhood.extend([new_tour_1, new_tour_2, new_tour_3])
     return neighborhood
 
+
 def generate_2opt_neighborhood(tour):
     neighborhood = []
     n = len(tour)
@@ -67,6 +75,7 @@ def generate_2opt_neighborhood(tour):
             neighborhood.append(new_tour)
     return neighborhood
 
+
 def random_edge_swap(tour):
     """Randomly swap two edges in the tour"""
     n = len(tour)
@@ -75,67 +84,45 @@ def random_edge_swap(tour):
     tour[i], tour[j] = tour[j], tour[i]
     return tour
 
+
+
 def diversify_solution(tour, diversification_factor):
     """Dywersyfikacja: losowo zmienia część trasy."""
     n = len(tour)
     num_swaps = int(diversification_factor * n)
-    print("Number of vertex swap :",num_swaps)
+    print("Number of vertex swap :", num_swaps)
     for _ in range(num_swaps):
         i, j = random.sample(range(n), 2)
         tour[i], tour[j] = tour[j], tour[i]
+    return tour
+
+
+
+
+def greedy_solution(G):
+    start_node = random.choice(list(G.nodes))
+    unvisited = set(G.nodes)
+    unvisited.remove(start_node)
+    tour = [start_node]
+
+    while unvisited:
+        last_node = tour[-1]
+        next_node = min(unvisited, key=lambda node: G[last_node][node]['weight'])
+        tour.append(next_node)
+        unvisited.remove(next_node)
+
     return tour
 
 def dynamic_tabu_tenure(iteration, max_iterations, base_tenure=10):
     """Dynamiczne dostosowanie długości listy tabu."""
     return base_tenure + int((iteration / max_iterations) * base_tenure * base_tenure)
 
-def dynamic_max_no_improve(iteration, max_iterations, base_no_improve=15):
-    """Dynamiczne dostosowanie limitu iteracji bez poprawy."""
-    print("base :",base_no_improve,"iteration :",iteration,"max_iteration", max_iterations)
-    dynamic_no_imp = base_no_improve + int((iteration / max_iterations) * base_no_improve * base_no_improve)
-    print("dynamic :",dynamic_no_imp, "+", (iteration / max_iterations) * base_no_improve * base_no_improve)
-    return dynamic_no_imp
+import psutil
+def memory_usage():
+    process = psutil.Process(os.getpid())
+    return process.memory_info().rss  # Wartość w bajtach
 
-def greedy_solution(G):
-    start_node = random.choice(list(G.nodes))
-    unvisited = set(G.nodes)
-    unvisited.remove(start_node)
-    tour = [start_node]
-    
-    while unvisited:
-        last_node = tour[-1]
-        next_node = min(unvisited, key=lambda node: G[last_node][node]['weight'])
-        tour.append(next_node)
-        unvisited.remove(next_node)
-    
-    return tour
-'''def get_nearest_neighbor(last_node, unvisited, G):
-   min_weight = float('inf')
-    nearest_node = None
-    
-    for node in unvisited:
-        weight = G[last_node][node]['weight']
-        if weight < min_weight:
-            min_weight = weight
-            nearest_node = node
-    
-    return nearest_node
 
-def greedy_solution(G):
-    start_node = random.choice(list(G.nodes))
-    unvisited = set(G.nodes)
-    unvisited.remove(start_node)
-    tour = [start_node]
-
-    while unvisited:
-        last_node = tour[-1]
-        next_node = get_nearest_neighbor(last_node, unvisited, G)
-        tour.append(next_node)
-        unvisited.remove(next_node)
-
-    return tour
-
-'''
 
 def tabu_search(G, max_iterations=1000, base_tabu_tenure=10, diversification_factor=0.15):
     """Algorytm Tabu Search z adaptacyjną dywersyfikacją i dynamicznymi parametrami."""
@@ -148,28 +135,33 @@ def tabu_search(G, max_iterations=1000, base_tabu_tenure=10, diversification_fac
     current_solution = greedy_solution(G)
     best_solution = current_solution
     best_cost = calculate_cost(G, best_solution)
-    global_best_cost=best_cost
-    global_best_solution=best_solution
+    global_best_cost = best_cost
+    global_best_solution = best_solution
     tabu_list = []
     iteration = 0
     no_improve_count = 0
     max_no_improve = 25
-    #last_diversification_iteration = -float('inf')  # Ostatnia iteracja z dywersyfikacją
-
+    history = set()
+    # last_diversification_iteration = -float('inf')  # Ostatnia iteracja z dywersyfikacją
+    tabu_tenure = 15
     print("Tabu Search started...\n")
     print(f"Initial solution: {current_solution}, Initial cost: {best_cost}\n")
 
     while iteration < max_iterations:
         # Dynamiczne dostosowanie parametrow
-        tabu_tenure = max(15, min(dynamic_tabu_tenure(iteration, max_iterations), 50))
-        
-        #max_no_improve = dynamic_max_no_improve(iteration, max_iterations)
+        #tabu_tenure = max(15, min(dynamic_tabu_tenure(iteration, max_iterations), 50))
+        if no_improve_count > max_no_improve // 2:
+           tabu_tenure = min(tabu_tenure + 5, 40)
+        else:
+           tabu_tenure = max(15, tabu_tenure - 2)
+
+        # max_no_improve = dynamic_max_no_improve(iteration, max_iterations)
 
         # Generowanie sasiedztwa
-        if iteration % 10 == 0 or iteration % 11 == 0:
+        if iteration % 10 == 0 or iteration % 11 == 0 :
             neighborhood = generate_3opt_neighborhood(current_solution)
         else:
-            neighborhood = generate_2opt_neighborhood(current_solution)
+             neighborhood = generate_2opt_neighborhood(current_solution)
         best_move = None
         best_move_cost = float('inf')
         best_move_edges = None
@@ -179,13 +171,13 @@ def tabu_search(G, max_iterations=1000, base_tabu_tenure=10, diversification_fac
             move_edges = set(zip(move, move[1:] + [move[0]]))  # Zapisujemy krawedzie
             move_cost = calculate_cost(G, move)
 
-            # aspiracja
-            if move_edges not in tabu_list or move_cost < best_cost:
-                if move_cost < best_move_cost:
-                    best_move_cost = move_cost
-                    best_move = move
-                    best_move_edges = move_edges
-            
+            if tuple(move) not in history:
+                # aspiracja
+                if move_edges not in tabu_list or move_cost < best_cost:
+                    if move_cost < best_move_cost:
+                        best_move_cost = move_cost
+                        best_move = move
+                        best_move_edges = move_edges
 
         # Jeśli znaleziono ruch
         if best_move is not None:
@@ -200,51 +192,59 @@ def tabu_search(G, max_iterations=1000, base_tabu_tenure=10, diversification_fac
             else:
                 no_improve_count += 1
 
-            #print(f"tabulistbefore = {tabu_list}")
-            #if tabu_tenure >= 50:
-                #tabu_tenure = max(15, tabu_tenure - 10)
-                #print(f"tabulistafter = {tabu_list}")
+            # print(f"tabulistbefore = {tabu_list}")
+            # if tabu_tenure >= 50:
+            # tabu_tenure = max(15, tabu_tenure - 10)
+            # print(f"tabulistafter = {tabu_list}")
             # Dodanie ruchu do listy tabu
             tabu_list.append(best_move_edges)
             if len(tabu_list) > tabu_tenure:
                 tabu_list.pop(0)  # Ograniczenie dlugości listy tabu
-            
-            #print(f"tabulistafter22 = {tabu_list}")
+                tabu_list.pop(0)
+            # print(f"tabulistafter22 = {tabu_list}")
+            history.add(tuple(current_solution))
 
-            print(f"Iteration {iteration + 1}: Best Cost = {global_best_cost}, Current = {current_cost}, Tabu Tenure = {tabu_tenure}, Max No Improve = {max_no_improve}")
+            print(
+                f"Iteration {iteration + 1}: Best Cost = {global_best_cost}, Current = {current_cost}, Tabu Tenure = {tabu_tenure}, Max No Improve = {max_no_improve}")
 
-            if no_improve_count > max_no_improve:  
-                    print(f"Iteration {iteration + 1}: No improvement for 5 steps, applying diversification.")
-                    current_solution = diversify_solution(current_solution, diversification_factor)
-                    current_cost = calculate_cost(G, current_solution)
-                    no_improve_count = 0
-                    best_cost=current_cost
+            if no_improve_count > max_no_improve:
+                print(f"Iteration {iteration + 1}: No improvement for {max_no_improve} steps, applying diversification.")
+                current_solution = diversify_solution(current_solution, diversification_factor)
+                current_cost = calculate_cost(G, current_solution)
+                no_improve_count = 0
+                best_cost = current_cost
 
             if current_cost < global_best_cost:
                 global_best_cost = current_cost
                 global_best_solution = current_solution
-                
+        if global_best_cost <= 7544.366:
+            save_to_excel(iteration + 1, time.time() - start_time, global_best_cost)
+            break
         iteration += 1
         if keyboard.is_pressed('q'):
             break
+
     print("Tabu Search completed.")
+    save_to_excel(iteration, time.time() - start_time, global_best_cost)
     return global_best_solution, global_best_cost
+
 
 # Rysowanie grafu z aktualnym rozwiązaniem
 def draw(Graph, current_solution, image):
     # Używamy spring_layout do rozplanowania wierzchołków
     pos = nx.spring_layout(Graph, seed=42, scale=0.8)
     width, height = 1600, 800  # Ustalamy wymiary obrazu
-    node_positions = {k: (int(v[0] * width / 2 + width / 2), int(v[1] * height / 2 + height / 2)) for k, v in pos.items()}
+    node_positions = {k: (int(v[0] * width / 2 + width / 2), int(v[1] * height / 2 + height / 2)) for k, v in
+                      pos.items()}
 
     # Rysowanie krawędzi
     image.fill(0)  # Czyszczenie obrazu na każdą iterację
-    for edge in Graph.edges():
-        start_node = edge[0]
-        end_node = edge[1]
-        start_pos = node_positions[start_node]
-        end_pos = node_positions[end_node]
-        cv2.line(image, start_pos, end_pos, (192, 192, 192), 2)
+    # for edge in Graph.edges():
+    #     start_node = edge[0]
+    #     end_node = edge[1]
+    #     start_pos = node_positions[start_node]
+    #     end_pos = node_positions[end_node]
+    #     cv2.line(image, start_pos, end_pos, (192, 192, 192), 2)
 
     # Rysowanie wierzchołków
     for node, (x, y) in node_positions.items():
@@ -269,7 +269,6 @@ def draw(Graph, current_solution, image):
     # Bez cv2.destroyAllWindows() - żeby nie zamykać okna po każdej iteracji
 
 
-
 def load(path):
     tree = ET.parse(path)
     root = tree.getroot()
@@ -286,19 +285,46 @@ def load(path):
     return G
 
 
+import openpyxl
+from openpyxl import Workbook
+
+
+def save_to_excel(iteration, time_elapsed, best_cost):
+    # Sprawdzamy, czy plik istnieje
+    try:
+        wb = load_workbook('results.xlsx')
+        sheet = wb.active
+    except FileNotFoundError:
+        wb = Workbook()
+        sheet = wb.active
+        # Ustawianie nagłówków, jeśli plik nie istnieje
+        sheet.append(['Iteration', 'Time Elapsed (s)', 'Best Cost'])
+
+    # Szukamy pierwszego pustego wiersza, aby dodać nowe dane
+    first_empty_row = sheet.max_row + 1  # Pierwszy wolny wiersz
+
+    # Zapisujemy dane w trzech kolumnach w pierwszym wolnym wierszu
+    sheet.cell(row=first_empty_row, column=1).value = iteration
+    sheet.cell(row=first_empty_row, column=2).value = time_elapsed
+    sheet.cell(row=first_empty_row, column=3).value = best_cost
+
+    # Zapisz plik
+    wb.save('results.xlsx')
+
 
 if __name__ == "__main__":
-    path = "D:\AlgorytmyOptumalizacji\\swiss42.xml"
+    path = "E:/TSP_TABU/pythonProject1/TSP-TabuSearch/berlin52.xml"
     G = load(path)
     image = np.zeros((800, 1600, 3), dtype=np.uint8)
     try:
+       for i in range(10000):
         start_time = time.time()
-        best_solution, best_cost = tabu_search(G, max_iterations=1000, diversification_factor=0.1)
+        best_solution, best_cost = tabu_search(G, max_iterations=5, diversification_factor=0.15)
         end_time = time.time()
         execution_time = end_time - start_time
         print(f"Time taken for Tabu Search: {execution_time:.2f} seconds")
         print("Best Solution (Tour):", best_solution)
         print("Best Cost:", best_cost)
-        draw(G, best_solution, image)
+        #draw(G, best_solution, image)
     except ValueError as e:
         print(e)
