@@ -70,7 +70,7 @@ def generate_2opt_neighborhood(tour):
     neighborhood = []
     n = len(tour)
     for i in range(n - 1):
-        for j in range(i + 2, n):  # Upewniamy się, że nie zamieniamy sąsiednich wierzchołków
+        for j in range(i + 2, n):
             new_tour = tour[:i] + tour[i:j][::-1] + tour[j:]
             neighborhood.append(new_tour)
     return neighborhood
@@ -90,7 +90,7 @@ def diversify_solution(tour, diversification_factor):
     """Dywersyfikacja: losowo zmienia część trasy."""
     n = len(tour)
     num_swaps = int(diversification_factor * n)
-    print("Number of vertex swap :", num_swaps)
+    #print("Number of vertex swap :", num_swaps)
     for _ in range(num_swaps):
         i, j = random.sample(range(n), 2)
         tour[i], tour[j] = tour[j], tour[i]
@@ -127,7 +127,7 @@ def memory_usage():
 def tabu_search(G, max_iterations=1000, base_tabu_tenure=10, diversification_factor=0.15):
     """Algorytm Tabu Search z adaptacyjną dywersyfikacją i dynamicznymi parametrami."""
     nodes = list(G.nodes)
-    print("nodes", nodes)
+    #print("nodes", nodes)
     if not nodes:
         raise ValueError("The graph is empty, no nodes to form a solution.")
 
@@ -144,8 +144,8 @@ def tabu_search(G, max_iterations=1000, base_tabu_tenure=10, diversification_fac
     history = set()
     # last_diversification_iteration = -float('inf')  # Ostatnia iteracja z dywersyfikacją
     tabu_tenure = 15
-    print("Tabu Search started...\n")
-    print(f"Initial solution: {current_solution}, Initial cost: {best_cost}\n")
+    #print("Tabu Search started...\n")
+    #print(f"Initial solution: {current_solution}, Initial cost: {best_cost}\n")
 
     while iteration < max_iterations:
         # Dynamiczne dostosowanie parametrow
@@ -161,7 +161,7 @@ def tabu_search(G, max_iterations=1000, base_tabu_tenure=10, diversification_fac
         if iteration % 10 == 0 or iteration % 11 == 0 :
             neighborhood = generate_3opt_neighborhood(current_solution)
         else:
-             neighborhood = generate_2opt_neighborhood(current_solution)
+            neighborhood = generate_2opt_neighborhood(current_solution)
         best_move = None
         best_move_cost = float('inf')
         best_move_edges = None
@@ -191,6 +191,12 @@ def tabu_search(G, max_iterations=1000, base_tabu_tenure=10, diversification_fac
                 no_improve_count = 0  # Reset licznika
             else:
                 no_improve_count += 1
+            #draw_graph_cv2(G, positions, current_solution)
+            draw_graph_cv2(G, positions, global_best_solution)
+            if iteration == 1:
+
+                cv2.waitKey(0)  # Oczekiwanie na klawisz
+                cv2.destroyAllWindows()
 
             # print(f"tabulistbefore = {tabu_list}")
             # if tabu_tenure >= 50:
@@ -203,12 +209,13 @@ def tabu_search(G, max_iterations=1000, base_tabu_tenure=10, diversification_fac
                 tabu_list.pop(0)
             # print(f"tabulistafter22 = {tabu_list}")
             history.add(tuple(current_solution))
+            #save_to_excel(iteration+1, time.time() - start_time, current_cost)
 
             print(
                 f"Iteration {iteration + 1}: Best Cost = {global_best_cost}, Current = {current_cost}, Tabu Tenure = {tabu_tenure}, Max No Improve = {max_no_improve}")
 
             if no_improve_count > max_no_improve:
-                print(f"Iteration {iteration + 1}: No improvement for {max_no_improve} steps, applying diversification.")
+                #print(f"Iteration {iteration + 1}: No improvement for {max_no_improve} steps, applying diversification.")
                 current_solution = diversify_solution(current_solution, diversification_factor)
                 current_cost = calculate_cost(G, current_solution)
                 no_improve_count = 0
@@ -217,15 +224,23 @@ def tabu_search(G, max_iterations=1000, base_tabu_tenure=10, diversification_fac
             if current_cost < global_best_cost:
                 global_best_cost = current_cost
                 global_best_solution = current_solution
-        if global_best_cost <= 7544.366:
-            save_to_excel(iteration + 1, time.time() - start_time, global_best_cost)
-            break
+
+
         iteration += 1
+
+
+        # if global_best_cost <= 7544.36590190409 * 1.05 or iteration == max_iterations:
+        #     save_to_excel(iteration, time.time() - start_time, global_best_cost)
+        #     break
+        # if global_best_cost <= 1610.0 or iteration == max_iterations:
+        #     save_to_excel(iteration, time.time() - start_time, global_best_cost)
+        #     break
+
         if keyboard.is_pressed('q'):
             break
 
-    print("Tabu Search completed.")
-    save_to_excel(iteration, time.time() - start_time, global_best_cost)
+    #print("Tabu Search completed.")
+
     return global_best_solution, global_best_cost
 
 
@@ -292,7 +307,7 @@ from openpyxl import Workbook
 def save_to_excel(iteration, time_elapsed, best_cost):
     # Sprawdzamy, czy plik istnieje
     try:
-        wb = load_workbook('results.xlsx')
+        wb = load_workbook('results5.xlsx')
         sheet = wb.active
     except FileNotFoundError:
         wb = Workbook()
@@ -309,22 +324,117 @@ def save_to_excel(iteration, time_elapsed, best_cost):
     sheet.cell(row=first_empty_row, column=3).value = best_cost
 
     # Zapisz plik
-    wb.save('results.xlsx')
+    wb.save('results5.xlsx')
+
+
+def generate_graph(num_nodes, img_size=500):
+    G = nx.Graph()
+
+    # Losowe współrzędne wierzchołków w zakresie (50, img_size - 50)
+    positions = {i: (np.random.randint(50, img_size - 50), np.random.randint(50, img_size - 50)) for i in
+                 range(num_nodes)}
+
+    # Dodanie wierzchołków
+    for node, pos in positions.items():
+        G.add_node(node, pos=pos)
+
+    # Dodanie krawędzi z wagami
+    for i in range(num_nodes):
+        for j in range(i + 1, num_nodes):
+            dist = np.linalg.norm(np.array(positions[i]) - np.array(positions[j]))
+            G.add_edge(i, j, weight=dist)
+
+    return G, positions
+
+
+# def draw_graph_cv2(G, positions, current_solution=None, img_size=600):
+#     img = np.ones((img_size, img_size, 3), dtype=np.uint8) * 255
+#
+#
+#     for (i, j) in G.edges():
+#         cv2.line(img, positions[i], positions[j], (200, 200, 200), 2)  # Szare
+#     # trasa
+#     if current_solution:
+#         for i in range(len(current_solution) - 1):
+#             start_pos = positions[current_solution[i]]
+#             end_pos = positions[current_solution[i + 1]]
+#             cv2.line(img, start_pos, end_pos, (0, 0, 255), 3)  # Czerwona
+#
+#         # ostatni  z pierwszym
+#         start_pos = positions[current_solution[-1]]
+#         end_pos = positions[current_solution[0]]
+#         cv2.line(img, start_pos, end_pos, (0, 0, 255), 3)  # Czerwona
+#
+#     # rysowanie w
+#     for node, pos in positions.items():
+#         cv2.circle(img, pos, 10, (0, 255, 0), -1)  # Zielone
+#         cv2.putText(img, str(node), (pos[0] + 10, pos[1] - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1)
+#
+#     # wyswietlenie
+#     cv2.imshow("Graph", img)
+#     cv2.waitKey(1)
+#
+
+def draw_graph_cv2(G, positions, current_solution=None, img_size=550, map_image_path="mapa_polski.png"):
+    # Załaduj mapę jako tło
+    map_img = cv2.imread(map_image_path)
+    map_img = cv2.resize(map_img, (img_size, img_size))  # Dopasuj rozmiar mapy do obrazu
+
+    # Jeśli obraz mapy nie istnieje, stwórz białe tło
+    if map_img is None:
+        map_img = np.ones((img_size, img_size, 3), dtype=np.uint8) * 255
+
+    # Nanieś krawędzie grafu
+    # for (i, j) in G.edges():
+        # cv2.line(map_img, positions[i], positions[j], (200, 200, 200), 2)  # Szare
+
+    # Rysowanie trasy (jeśli podano)
+    if current_solution:
+        for i in range(len(current_solution) - 1):
+            start_pos = positions[current_solution[i]]
+            end_pos = positions[current_solution[i + 1]]
+            cv2.line(map_img, start_pos, end_pos, (0, 0, 255), 3)  # Czerwona
+
+        # Ostatni z pierwszym
+        start_pos = positions[current_solution[-1]]
+        end_pos = positions[current_solution[0]]
+        cv2.line(map_img, start_pos, end_pos, (0, 0, 255), 3)  # Czerwona
+
+    # Rysowanie węzłów grafu
+    for node, pos in positions.items():
+        cv2.circle(map_img, pos, 10, (0, 255, 0), -1)  # Zielone
+        cv2.putText(map_img, str(node), (pos[0] + 10, pos[1] - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1)
+
+    # Wyświetlenie obrazu z mapą i grafem
+    cv2.imshow("Graph on Map", map_img)
+    cv2.waitKey(1)
+
 
 
 if __name__ == "__main__":
-    path = "E:/TSP_TABU/pythonProject1/TSP-TabuSearch/berlin52.xml"
+    path = "E:/TSP_TABU/pythonProject1/TSP-TabuSearch/bayg29.xml"
     G = load(path)
     image = np.zeros((800, 1600, 3), dtype=np.uint8)
     try:
-       for i in range(10000):
+        num_nodes = 50  # Liczba wierzchołków
+        G, positions = generate_graph(num_nodes)
+        draw_graph_cv2(G, positions)
+        cv2.waitKey(0)  # Oczekiwanie na klawisz
+        cv2.destroyAllWindows()
         start_time = time.time()
-        best_solution, best_cost = tabu_search(G, max_iterations=5, diversification_factor=0.15)
-        end_time = time.time()
-        execution_time = end_time - start_time
-        print(f"Time taken for Tabu Search: {execution_time:.2f} seconds")
-        print("Best Solution (Tour):", best_solution)
-        print("Best Cost:", best_cost)
-        #draw(G, best_solution, image)
+        best_solution, best_cost = tabu_search(G, max_iterations=1000, diversification_factor=0.15)
+        draw_graph_cv2(G, positions, best_solution)
+        cv2.waitKey(0)  # Oczekiwanie na klawisz
+        cv2.destroyAllWindows()
+       # for i in range(201):
+       #  print(i)
+       #  start_time = time.time()
+       #  best_solution, best_cost = tabu_search(G, max_iterations=1000, diversification_factor=0.15)
+       #  end_time = time.time()
+       #  execution_time = end_time - start_time
+       #  #print(f"Time taken for Tabu Search: {execution_time:.2f} seconds")
+       #  #print("Best Solution (Tour):", best_solution)
+       #  #print("Best Cost:", best_cost)
+       #  #draw(G, best_solution, image)
     except ValueError as e:
         print(e)
