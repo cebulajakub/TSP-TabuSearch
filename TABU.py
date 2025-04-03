@@ -14,7 +14,6 @@ from openpyxl import Workbook
 import random
 
 def generate_swap_neighborhood(solution):
-    """Generuje sąsiedztwo poprzez zamianę dwóch miast w trasie."""
     neighborhood = []
     n = len(solution)
     
