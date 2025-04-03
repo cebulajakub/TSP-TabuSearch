@@ -11,6 +11,21 @@ import pandas as pd
 from openpyxl import load_workbook
 import psutil
 from openpyxl import Workbook
+import random
+
+def generate_swap_neighborhood(solution):
+    """Generuje sąsiedztwo poprzez zamianę dwóch miast w trasie."""
+    neighborhood = []
+    n = len(solution)
+    
+    for i in range(n - 1): 
+        for j in range(i + 1, n):
+            new_solution = solution[:]
+            new_solution[i], new_solution[j] = new_solution[j], new_solution[i]
+            neighborhood.append(new_solution)
+    
+    return neighborhood
+
 
 def calculate_cost(G, tour):
     total_cost = 0
@@ -85,7 +100,7 @@ def tabu_search(G, max_iterations=1000, base_tabu_tenure=10, diversification_fac
     tabu_list = []
     iteration = 0
     no_improve_count = 0
-    max_no_improve = 25
+    max_no_improve = 100
     history = set()
     tabu_tenure = 15
     while iteration < max_iterations:
@@ -93,10 +108,11 @@ def tabu_search(G, max_iterations=1000, base_tabu_tenure=10, diversification_fac
             tabu_tenure = min(tabu_tenure + 5, 40)
         else:
             tabu_tenure = max(15, tabu_tenure - 2)
-        if iteration % 10 == 0 or iteration % 11 == 0:
-            neighborhood = generate_3opt_neighborhood(current_solution)
-        else:
-            neighborhood = generate_2opt_neighborhood(current_solution)
+        # if iteration % 10 == 0 or iteration % 11 == 0:
+        #     neighborhood = generate_3opt_neighborhood(current_solution)
+        # else:
+        #     neighborhood = generate_2opt_neighborhood(current_solution)
+        neighborhood = generate_swap_neighborhood(current_solution)
         best_move = None
         best_move_cost = float('inf')
         best_move_edges = None
@@ -123,7 +139,10 @@ def tabu_search(G, max_iterations=1000, base_tabu_tenure=10, diversification_fac
                 tabu_list.pop(0)
                 tabu_list.pop(0)
             history.add(tuple(current_solution))
+            print(f"Iteration {iteration + 1}: Best Cost = {global_best_cost}, Current = {current_cost}, Tabu Tenure = {tabu_tenure}, Max No Improve = {max_no_improve}")
+
             if no_improve_count > max_no_improve:
+                print("dywersyfikacja")
                 current_solution = diversify_solution(current_solution, diversification_factor)
                 current_cost = calculate_cost(G, current_solution)
                 no_improve_count = 0
@@ -132,7 +151,7 @@ def tabu_search(G, max_iterations=1000, base_tabu_tenure=10, diversification_fac
                 global_best_cost = current_cost
                 global_best_solution = current_solution
         iteration += 1
-        if global_best_cost <= 7544.366 or iteration == max_iterations:
+        if global_best_cost <= 7544.36590190409 or iteration == max_iterations:
             save_to_excel(iteration, time.time() - start_time, global_best_cost)
             break
         if keyboard.is_pressed('q'):
@@ -154,7 +173,7 @@ def load(path):
 
 def save_to_excel(iteration, time_elapsed, best_cost):
     try:
-        wb = load_workbook('results.xlsx')
+        wb = load_workbook('berlin521.xlsx')
         sheet = wb.active
     except FileNotFoundError:
         wb = Workbook()
@@ -164,15 +183,16 @@ def save_to_excel(iteration, time_elapsed, best_cost):
     sheet.cell(row=first_empty_row, column=1).value = iteration
     sheet.cell(row=first_empty_row, column=2).value = time_elapsed
     sheet.cell(row=first_empty_row, column=3).value = best_cost
-    wb.save('results.xlsx')
+    wb.save('berlin521.xlsx')
 
-if __name__ == "__main__":
+if __name__ == "__main__":   
     path = "berlin52.xml"
     G = load(path)
     try:
-        for i in range(10000):
+        for i in range(203):
             start_time = time.time()
-            best_solution, best_cost = tabu_search(G, max_iterations=1000, diversification_factor=0.15)
+            best_solution, best_cost = tabu_search(G, max_iterations=100000, diversification_factor=0.1)
             end_time = time.time()
+            print(end_time-start_time)
     except ValueError as e:
         print(e)
