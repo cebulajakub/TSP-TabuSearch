@@ -26,6 +26,33 @@ def generate_swap_neighborhood(solution):
     return neighborhood
 
 
+def generate_insert_neighborhood(solution):
+    neighborhood = []
+    n = len(solution)
+
+    for i in range(n): 
+        for j in range(n):
+            if i != j: 
+                new_solution = solution[:]
+                city = new_solution.pop(j)
+                new_solution.insert(i, city)
+                neighborhood.append(new_solution)
+
+    return neighborhood
+
+
+def generate_invert_neighborhood(solution):
+    neighborhood = []
+    n = len(solution)
+
+    for i in range(n - 1):
+        for j in range(i + 1, n):  
+            new_solution = solution[:]
+            new_solution[i:j+1] = reversed(new_solution[i:j+1]) 
+            neighborhood.append(new_solution)
+
+    return neighborhood
+
 def calculate_cost(G, tour):
     total_cost = 0
     for i in range(0, len(tour) - 1):
@@ -111,7 +138,7 @@ def tabu_search(G, max_iterations=1000, base_tabu_tenure=10, diversification_fac
         #     neighborhood = generate_3opt_neighborhood(current_solution)
         # else:
         #     neighborhood = generate_2opt_neighborhood(current_solution)
-        neighborhood = generate_swap_neighborhood(current_solution)
+        neighborhood = generate_invert_neighborhood(current_solution)
         best_move = None
         best_move_cost = float('inf')
         best_move_edges = None
