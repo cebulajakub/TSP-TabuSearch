@@ -44,7 +44,6 @@ def generate_insert_neighborhood(solution):
 def generate_invert_neighborhood(solution):
     neighborhood = []
     n = len(solution)
-
     for i in range(n - 1):
         for j in range(i + 1, n):  
             new_solution = solution[:]
@@ -126,7 +125,7 @@ def tabu_search(G, max_iterations=1000, base_tabu_tenure=10, diversification_fac
     tabu_list = []
     iteration = 0
     no_improve_count = 0
-    max_no_improve = 100
+    max_no_improve = 50
     history = set()
     tabu_tenure = 15
     while iteration < max_iterations:
@@ -165,10 +164,10 @@ def tabu_search(G, max_iterations=1000, base_tabu_tenure=10, diversification_fac
                 tabu_list.pop(0)
                 tabu_list.pop(0)
             history.add(tuple(current_solution))
-            print(f"Iteration {iteration + 1}: Best Cost = {global_best_cost}, Current = {current_cost}, Tabu Tenure = {tabu_tenure}, Max No Improve = {max_no_improve}")
+            #print(f"Iteration {iteration + 1}: Best Cost = {global_best_cost}, Current = {current_cost}, Tabu Tenure = {tabu_tenure}, Max No Improve = {max_no_improve}")
 
             if no_improve_count > max_no_improve:
-                print("dywersyfikacja")
+                #print("dywersyfikacja")
                 current_solution = diversify_solution(current_solution, diversification_factor)
                 current_cost = calculate_cost(G, current_solution)
                 no_improve_count = 0
@@ -177,7 +176,7 @@ def tabu_search(G, max_iterations=1000, base_tabu_tenure=10, diversification_fac
                 global_best_cost = current_cost
                 global_best_solution = current_solution
         iteration += 1
-        if global_best_cost <= 7544.36590190409 or iteration == max_iterations:
+        if global_best_cost <= 7544.365901904087 or iteration == max_iterations:
             save_to_excel(iteration, time.time() - start_time, global_best_cost)
             break
         if keyboard.is_pressed('q'):
@@ -199,7 +198,7 @@ def load(path):
 
 def save_to_excel(iteration, time_elapsed, best_cost):
     try:
-        wb = load_workbook('berlin521.xlsx')
+        wb = load_workbook('berlin52invert.xlsx')
         sheet = wb.active
     except FileNotFoundError:
         wb = Workbook()
@@ -209,7 +208,7 @@ def save_to_excel(iteration, time_elapsed, best_cost):
     sheet.cell(row=first_empty_row, column=1).value = iteration
     sheet.cell(row=first_empty_row, column=2).value = time_elapsed
     sheet.cell(row=first_empty_row, column=3).value = best_cost
-    wb.save('berlin521.xlsx')
+    wb.save('berlin52invert.xlsx')
 
 if __name__ == "__main__":   
     path = "berlin52.xml"
@@ -217,8 +216,9 @@ if __name__ == "__main__":
     try:
         for i in range(203):
             start_time = time.time()
-            best_solution, best_cost = tabu_search(G, max_iterations=100000, diversification_factor=0.1)
+            best_solution, best_cost = tabu_search(G, max_iterations=10000, diversification_factor=0.1)
             end_time = time.time()
-            print(end_time-start_time)
+            #print(end_time-start_time)
+            print(i)
     except ValueError as e:
         print(e)

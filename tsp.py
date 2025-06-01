@@ -132,7 +132,9 @@ def tabu_search(G, max_iterations=1000, base_tabu_tenure=10, diversification_fac
         raise ValueError("The graph is empty, no nodes to form a solution.")
 
     # Inicjalizacja
-    current_solution = greedy_solution(G)
+    #current_solution = greedy_solution(G)
+    current_solution = random.sample(nodes, len(nodes))
+
     best_solution = current_solution
     best_cost = calculate_cost(G, best_solution)
     global_best_cost = best_cost
@@ -211,8 +213,7 @@ def tabu_search(G, max_iterations=1000, base_tabu_tenure=10, diversification_fac
             history.add(tuple(current_solution))
             #save_to_excel(iteration+1, time.time() - start_time, current_cost)
 
-            print(
-                f"Iteration {iteration + 1}: Best Cost = {global_best_cost}, Current = {current_cost}, Tabu Tenure = {tabu_tenure}, Max No Improve = {max_no_improve}")
+            print(f"Iteration {iteration + 1}: Best Cost = {global_best_cost}, Current = {current_cost}, Tabu Tenure = {tabu_tenure}, Max No Improve = {max_no_improve}")
 
             if no_improve_count > max_no_improve:
                 #print(f"Iteration {iteration + 1}: No improvement for {max_no_improve} steps, applying diversification.")
@@ -412,7 +413,7 @@ def draw_graph_cv2(G, positions, current_solution=None, img_size=550, map_image_
 
 
 if __name__ == "__main__":
-    path = "E:/TSP_TABU/pythonProject1/TSP-TabuSearch/bayg29.xml"
+    path = "D:/AlgorytmyOptumalizacji/bayg29.xml"
     G = load(path)
     image = np.zeros((800, 1600, 3), dtype=np.uint8)
     try:
