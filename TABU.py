@@ -25,7 +25,7 @@ def generate_swap_neighborhood(solution):
     
     return neighborhood
 
-
+#
 def generate_insert_neighborhood(solution):
     neighborhood = []
     n = len(solution)
